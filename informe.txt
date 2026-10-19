@@ -1,0 +1,44 @@
+================================================================================
+INFORME DE MEDIDAS DE SEGURIDAD IMPLEMENTADAS - PROYECTO "MALETÍN COMERCIO"
+================================================================================
+
+A continuación se detalla de manera estructurada y formal la lista completa de barreras de seguridad, validaciones e integraciones tecnológicas aplicadas en el código fuente de la plataforma. Estas medidas garantizan la integridad de los datos, la defensa frente a ataques informáticos y un entorno de monitoreo activo para los administradores.
+
+1. VALIDACIONES ROBUSTAS Y CONTROL DE CONTRASEÑAS
+Se han reforzado los controladores de registro para exigir contraseñas con un mínimo de 8 caracteres. El sistema previene proactivamente la creación de credenciales débiles y fáciles de vulnerar.
+
+2. PREVENCIÓN DE ATAQUES DE FUERZA BRUTA (RATE LIMITING)
+Se configuró un muro de contención de 5 intentos por minuto para el inicio de sesión. Si un atacante supera este límite, el sistema de enrutamiento web bloquea las solicitudes de esa IP devolviendo un estado HTTP 429 ("Demasiados intentos").
+
+3. PROTECCIÓN CONTRA CLICKJACKING Y XSS MEDIANTE CABECERAS HTTP
+El núcleo cuenta con un "Middleware" dedicado exclusivamente a inyectar cabeceras de seguridad estrictas en cada respuesta del servidor. Se incluyeron políticas defensivas como "X-Frame-Options: DENY" y "X-XSS-Protection: 1; mode=block", anulando intentos de incrustar la web maliciosamente en otras páginas o ejecutar scripts de terceros.
+
+4. BLOQUEO DE ACCESO A DIRECTORIOS SENSIBLES
+Se reconfiguró la raíz pública de acceso (mediante el archivo .htaccess). De esta manera, nadie desde el exterior puede listar directorios clave ni acceder directamente al archivo ".env", repositorios ".git" o el directorio "/storage". El servidor cortará el acceso emitiendo un estado HTTP 403 (Prohibido).
+
+5. SANITIZACIÓN ACTIVA DE DATOS
+Para neutralizar vulnerabilidades de Inyección de Código (Cross-Site Scripting), toda información de texto que ingresa el usuario (como nombres en el formulario de registro) es sometida a un filtro de limpieza ("strip_tags") eliminando cualquier código HTML o JavaScript incrustado de manera oculta antes de llegar a la base de datos.
+
+6. MONITOREO SILENCIOSO DE IP PARA ATACANTES
+El controlador de autenticación está programado para detectar intentos de inicio de sesión fallidos. Ante un error, el sistema obtiene y almacena silenciosamente en un registro encriptado (laravel.log) la dirección IP del visitante, el correo atacado, la cantidad de intentos y la hora exacta del suceso.
+
+7. CAPTCHA MATEMÁTICO DINÁMICO CONTRA BOTS AUTOMATIZADOS
+Se desarrolló un algoritmo avanzado de Captcha que incluye operaciones aleatorias de suma, resta y multiplicación. Además, alterna al azar entre mostrar los números con dígitos o con letras completas (ej. "cinco"). Este esquema protege los registros masivos y salta a la acción en la pantalla de "Login" solo cuando un usuario real (o un bot) ha fallado su contraseña más de 3 veces.
+
+8. CHECKOUT SEGURO Y RETENCIÓN PARCIAL DE DATOS DE TARJETAS
+Cumpliendo principios de normativas estándar de seguridad en pagos (similares a PCI-DSS), el sistema nunca almacena el número íntegro de la tarjeta de crédito ni su código de seguridad. La validación transaccional retiene exclusivamente los últimos 4 dígitos como medio de comprobación y registro interno del cliente, evitando el robo de datos financieros.
+
+9. RATE LIMITING EN EL PROCESAMIENTO DE PAGOS (CARDING)
+Además del inicio de sesión, el módulo de procesamiento de pagos (Checkout) posee un estrangulamiento de red agresivo ("throttle:3,1"). Impide completamente a un atacante introducir iteraciones masivas de distintas tarjetas en corto tiempo.
+
+10. ENCRIPTACIÓN NATIVA DE DATOS SENSIBLES - AES-256
+La plataforma hace uso de una codificación avanzada a nivel del modelo ("Cast Encryption") para columnas que albergan información confidencial de las órdenes, como la "Dirección de Envío". Si existiera un volcado de la base de datos (Data Breach), el archivo del pirata informático mostrará cadenas ilegibles protegidas por la clave principal ("APP_KEY").
+
+11. REGISTROS DE AUDITORÍA EN TIEMPO REAL (AUDIT LOGS)
+Integrando y configurando la librería especializada "laravel-auditing", el sistema genera una traza de historial cada vez que ocurre un cambio drástico. Actualizar un producto, borrar un usuario o alterar perfiles, origina un registro silencioso en la base de datos indicando la IP, el responsable, la acción y un registro comparativo exacto de los valores viejos y los valores nuevos insertados.
+
+12. PANEL ANALÍTICO CENTRALIZADO DE SEGURIDAD PARA GERENCIA
+Basándose en el recabado de registros (Puntos 6 y 11), el sistema cuenta ahora con un módulo visual de "Auditorías y Seguridad" dentro del Panel Administrativo de Gerencia. Permite a los administradores observar en tablas claras y ordenadas los correos atacados, las IPs, y toda la bitácora interactiva de acciones (Auditorías) para encontrar culpables si ocurriera alguna manipulación perjudicial.
+
+================================================================================
+Fin del Informe.

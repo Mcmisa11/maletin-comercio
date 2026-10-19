@@ -1,0 +1,158 @@
+=========================================================
+GUÍA PARA EJECUTAR EL PROYECTO "MALETÍN COMERCIO"
+=========================================================
+
+Para hacer funcionar este proyecto en otra computadora,
+sigue estos pasos en el orden indicado:
+
+---------------------------------------------------------
+1. REQUISITOS PREVIOS EN LA NUEVA COMPUTADORA
+---------------------------------------------------------
+Asegúrate de tener instalado:
+- XAMPP (Para Apache y MySQL).
+- Composer (Para las dependencias de PHP).
+- Node.js (Para las dependencias de Frontend/Vite).
+
+---------------------------------------------------------
+2. PREPARAR LA BASE DE DATOS
+---------------------------------------------------------
+1. Abre XAMPP y enciende los módulos de "Apache" y "MySQL".
+2. Ve a tu navegador e ingresa a: http://localhost/phpmyadmin/
+3. Crea una nueva base de datos vacía con el nombre:
+   maletin_comercio_db
+
+---------------------------------------------------------
+3. INSTALAR DEPENDENCIAS
+---------------------------------------------------------
+Abre una terminal (CMD, PowerShell o Bash) dentro de la
+carpeta del proyecto (c:\xampp\htdocs\maletin_comercio) 
+y ejecuta estos comandos uno por uno:
+
+- Para PHP:
+  composer install
+
+- Para el Frontend:
+  npm install
+
+---------------------------------------------------------
+4. MIGRAR DATOS Y CREAR USUARIOS
+---------------------------------------------------------
+En la misma terminal, ejecuta el siguiente comando para
+crear todas las tablas y llenar los datos por defecto 
+(esto creará el usuario administrador):
+
+  php artisan migrate:fresh --seed
+
+---------------------------------------------------------
+5. LEVANTAR EL PROYECTO (NECESITAS 2 TERMINALES)
+---------------------------------------------------------
+TERMINAL 1 (Para estilos e interfaz gráfica):
+Abre una terminal en la carpeta del proyecto y ejecuta:
+  npm run dev
+(¡Importante! NO CIERRES ESTA TERMINAL, déjala corriendo).
+
+TERMINAL 2 (Para el servidor PHP):
+Abre OTRA terminal nueva en la carpeta del proyecto y ejecuta:
+  php artisan serve
+(Tampoco cierres esta terminal).
+
+---------------------------------------------------------
+6. INGRESAR AL PROYECTO
+---------------------------------------------------------
+Ve a tu navegador web e ingresa al enlace que te dio el
+comando anterior (generalmente es):
+  http://localhost:8000
+
+Para iniciar sesión como administrador, utiliza estas credenciales:
+- Correo:       misael@carvajal.com
+- Usuario:      misael_admin
+- Contraseña:   1234567890
+
+¡Listo! El proyecto debería estar funcionando al 100%.
+
+---------------------------------------------------------
+7. MEJORAS DE SEGURIDAD IMPLEMENTADAS
+---------------------------------------------------------
+El código fuente ha sido blindado con defensas adicionales.
+Aquí tienes los cambios y cómo ponerlos a prueba:
+
+A. Importación de Clases y Validación
+   - Archivo Modificado: app/Http/Controllers/AuthController.php
+   - Qué se hizo: Se corrigieron los imports de 'User' y 'Hash', y la contraseña nueva exige un mínimo de 8 caracteres.
+   - CÓMO PROBAR: Ve a "Registro" e intenta crear una cuenta usando "123456" de contraseña. El sistema te arrojará un error obligándote a usar 8 caracteres.
+
+B. Prevención de Ataques de Fuerza Bruta
+   - Archivo Modificado: routes/web.php
+   - Qué se hizo: Se agregó el límite (Rate Limiting) de 5 intentos por minuto para la ruta POST de login.
+   - CÓMO PROBAR: Intenta iniciar sesión con una contraseña incorrecta 6 veces seguidas muy rápido. En el sexto intento, la pantalla mostrará "Too Many Attempts" (Demasiados intentos) y te bloqueará por 1 minuto.
+
+C. Protección contra Clickjacking y XSS (Cabeceras HTTP)
+   - Archivos: app/Http/Middleware/SecurityHeaders.php y bootstrap/app.php
+   - Qué se hizo: Se programó un Middleware para inyectar Cabeceras de Seguridad estricta y Políticas de Seguridad de Contenido (CSP).
+   - CÓMO PROBAR: Presiona F12 en tu navegador (Herramientas de Desarrollador), ve a la pestaña "Red" (Network), recarga la página y haz clic en la solicitud del documento principal. En la sección "Response Headers" (Cabeceras de Respuesta) verás: X-Frame-Options: DENY, X-XSS-Protection: 1; mode=block.
+
+D. Bloqueo de Carpetas Sensibles
+   - Archivo Modificado: /.htaccess (Creado en la raíz)
+   - Qué se hizo: Se bloqueó el acceso directo vía URL a archivos como .env, .git, storage, etc.
+   - CÓMO PROBAR: Si usas Apache sin "artisan serve", intenta navegar a "http://localhost/maletin_comercio/.env". Verás una pantalla de Acceso Prohibido (403 Forbidden).
+
+E. Sanitización de Datos
+   - Archivo Modificado: app/Http/Controllers/AuthController.php
+   - Qué se hizo: Los nombres introducidos al registrarse se limpian usando "strip_tags()" eliminando código HTML encubierto.
+   - CÓMO PROBAR: Crea una nueva cuenta e ingresa como nombre: "<b>Misael</b>". Al registrarte, verás que el nombre guardado solo dirá "Misael" sin las negritas, porque la etiqueta fue eliminada.
+
+F. Monitoreo Silencioso de IP
+   - Archivo Modificado: app/Http/Controllers/AuthController.php
+   - Qué se hizo: Cada intento de login fallido captura la IP atacante y el usuario ingresado.
+   - CÓMO PROBAR: Equivócate al iniciar sesión. Luego, abre el archivo "storage/logs/laravel.log" en tu editor de código. Verás registrado el "Intento de inicio de sesión fallido" junto con la dirección IP (que será 127.0.0.1 por estar en localhost).
+
+G. Captcha Matemático Dinámico (Anti-Bots)
+   - Archivos Modificados: app/Http/Controllers/AuthController.php, register.blade.php y login.blade.php
+   - Qué se hizo: Se agregó un Captcha matemático avanzado que incluye operaciones aleatorias (+, -, *) y convierte dígitos a texto (Ej: "cinco * 3 = ?") para confundir a los bots. Aparece en el Registro por defecto, y en el Login SÓLO después de 3 intentos fallidos.
+   - CÓMO PROBAR: Ve al Registro para verlo en acción (refresca para ver cómo muta a texto). Para probar el Login, intenta ingresar con una contraseña mala 3 veces seguidas; al cuarto intento aparecerá un cartel rojo pidiéndote resolver un problema.
+
+H. Sistema de Checkout Seguro (Opciones de Envío y PCI-DSS)
+   - Archivos Modificados: CarritoController.php, carrito.blade.php, mis_compras.blade.php, Orden.php
+   - Qué se hizo: Se crearon opciones de "Envío a Domicilio" o "Retiro en Tienda". En el formulario de pago de tarjetas, los datos jamás se envían completos a la BD. Se cumple la norma de seguridad extrayendo y guardando ÚNICAMENTE los últimos 4 dígitos. Además, el cliente tiene una pantalla de "Mis Compras" para ver sus órdenes aprobadas.
+   - CÓMO PROBAR: Con un usuario invitado, ve a tu Carrito, selecciona Envío a Domicilio, pon una dirección falsa y una tarjeta de 16 dígitos al azar. Haz clic en Procesar. Verás tu orden en la nueva pantalla "Mis Compras".
+
+I. Rate Limiting en Procesamiento de Pagos
+   - Archivo Modificado: routes/web.php
+   - Qué se hizo: Se bloqueó el ataque de fuerza bruta a las tarjetas aplicando "throttle:3,1" en la ruta de checkout.
+   - CÓMO PROBAR: Intenta darle al botón "Procesar Pago" muy rápidamente más de 3 veces. El sistema detendrá el cuarto intento mostrando "Too Many Attempts".
+
+J. Encriptación de Datos Sensibles (Nativo)
+   - Archivo Modificado: app/Models/Orden.php
+   - Qué se hizo: Se aplicó "casts" de encriptación (AES-256) a la columna "direccion_envio".
+   - CÓMO PROBAR: Procesa una compra con Envío a Domicilio. Luego abre phpMyAdmin (localhost/phpmyadmin), ve a la tabla "ordenes" y busca la columna "direccion_envio". En lugar de tu dirección, verás una cadena incomprensible de seguridad (ej: eyJpdi...).
+
+K. Registros de Auditoría en Tiempo Real (Audit Logs)
+   - Archivos Modificados: User.php, Producto.php
+   - Qué se hizo: Se instaló la herramienta "laravel-auditing" para grabar CADA modificación que se haga en productos o usuarios.
+   - CÓMO PROBAR: Entra como Administrador y edítale el nombre o precio a un Producto existente. Luego ve a phpMyAdmin y abre la tabla "audits". Encontrarás un registro detallado de quién hizo el cambio, desde qué IP, y el valor exacto anterior y el nuevo valor.
+
+---------------------------------------------------------
+8. SOLUCIÓN DE PROBLEMAS (SI LOS PUERTOS CAMBIAN)
+---------------------------------------------------------
+Al llevar el proyecto a una computadora nueva, es común que
+los puertos de red estén ocupados por otros programas (como 
+Skype, VMware, etc). Aquí tienes la solución:
+
+CASO 1: El puerto de MySQL cambió en XAMPP (Ej: 3307 en vez de 3306)
+- Síntoma: Al ejecutar "php artisan migrate", te da un error de "Connection refused".
+- Solución: 
+  1. Abre el archivo oculto llamado ".env" que está en la raíz del proyecto.
+  2. Busca la línea que dice "DB_PORT=3306".
+  3. Cámbiala por el puerto que esté usando el MySQL de esa computadora (Ej: DB_PORT=3307).
+  4. Guarda el archivo y vuelve a intentar el comando.
+
+CASO 2: El puerto 8000 está ocupado
+- Síntoma: Al escribir "php artisan serve", la terminal te dice que está corriendo en "http://127.0.0.1:8001" en vez del 8000.
+- Solución:
+  1. ¡No pasa nada! Simplemente usa el nuevo enlace que te dio la terminal en tu navegador.
+  2. Si por alguna razón OBLIGATORIAMENTE quieres correrlo en otro puerto específico (ej: 8080), puedes forzarlo ejecutando:
+     php artisan serve --port=8080
+
+CASO 3: Los estilos o JavaScript no cargan
+- Síntoma: La página se ve sin colores, todo blanco y negro.
+- Solución: Asegúrate de no haber cerrado la TERMINAL 1 (la de "npm run dev"). Vite necesita esa terminal encendida siempre en modo desarrollo.

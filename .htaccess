@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    # Bloquear acceso a archivos sensibles (Punto 4)
+    <FilesMatch "^\.env|composer\.json|package\.json|phpunit\.xml|readme\.md">
+        Require all denied
+    </FilesMatch>
+
+    <DirectoryMatch "^.*/(\.git|storage|bootstrap|config|database|resources|tests)/.*$">
+        Require all denied
+    </DirectoryMatch>
+
+    RewriteEngine On
+
+    # Redirigir el tráfico a la carpeta public
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
